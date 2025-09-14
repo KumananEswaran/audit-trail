@@ -22,6 +22,7 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   tickets    Ticket[]
+  auditLogs  AuditLog[]
 }
 
 model Ticket {
@@ -36,4 +37,19 @@ model Ticket {
   user        User     @relation(fields: [userId], references: [id])
 }
 
+model AuditLog {
+  id           Int       @id @default(autoincrement())
+  userId       String?  
+  user         User?     @relation(fields: [userId], references: [id])
+  action       String    
+  resourceType String   
+  resourceId   String?   
+  before       Json?     
+  after        Json?     
+  metadata     Json?     
+  createdAt    DateTime  @default(now())
 
+  @@index([createdAt])
+  @@index([userId])
+  @@index([resourceType, resourceId])
+}
