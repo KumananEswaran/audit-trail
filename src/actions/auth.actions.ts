@@ -1,0 +1,58 @@
+"use server";
+
+import { prisma } from "@/db/prisma";
+import bcrypt from "bcryptjs";
+import { signAuthToken, setAuthCookie } from "@/lib/auth";
+
+type ResponseResult = {
+	success: boolean;
+	message: string;
+};
+
+// Register new user
+export async function registerUser(
+	prevState: ResponseResult,
+	formData: FormData
+): Promise<ResponseResult> {
+	try {
+		const name = formData.get("name") as string;
+		const email = formData.get("email") as string;
+		const password = formData.get("password") as string;
+
+		if (!name || !email || !password) {
+			return { success: false, message: "All fields are required" };
+		}
+
+		// Check if user exists
+		const existingUser = await prisma.user.findUnique({
+			where: { email },
+		});
+
+		if (existingUser) {
+			return { success: false, message: "User already exists" };
+		}
+
+		// Hash password
+		const hashedPassword = await bcrypt.hash(password, 10);
+
+		// Create user
+		const user = await prisma.user.create({
+			data: {
+				name,
+				email,
+				password: hashedPassword,
+			},
+		});
+
+		// Sign and set auth token
+		const token = await signAuthToken({ userId: user.id });
+		await setAuthCookie(token);
+
+		return { success: true, message: "Registration" };
+	} catch {
+		return {
+			success: false,
+			message: "Something went wrong, please try again",
+		};
+	}
+}
