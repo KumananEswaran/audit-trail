@@ -2,7 +2,8 @@
 
 import { prisma } from "@/db/prisma";
 import bcrypt from "bcryptjs";
-import { signAuthToken, setAuthCookie } from "@/lib/auth";
+import { signAuthToken, setAuthCookie, removeAuthCookie } from "@/lib/auth";
+import { FaK } from "react-icons/fa6";
 
 type ResponseResult = {
 	success: boolean;
@@ -54,5 +55,55 @@ export async function registerUser(
 			success: false,
 			message: "Something went wrong, please try again",
 		};
+	}
+}
+
+// Log user out and remove auth cookie
+export async function logoutUser(): Promise<{
+	success: boolean;
+	message: string;
+}> {
+	try {
+		await removeAuthCookie();
+
+		return { success: true, message: "Logout Successful" };
+	} catch {
+		return { success: false, message: "Logout failed. Please try again" };
+	}
+}
+
+// Log user in
+export async function loginUser(
+	prevState: ResponseResult,
+	formData: FormData
+): Promise<ResponseResult> {
+	try {
+		const email = formData.get("email") as string;
+		const password = formData.get("password") as string;
+
+		if (!email || !password) {
+			return { success: false, message: "Email and password are required" };
+		}
+
+		const user = await prisma.user.findUnique({
+			where: { email },
+		});
+
+		if (!user || !user.password) {
+			return { success: false, message: "Invalid email or password" };
+		}
+
+		const isMatch = await bcrypt.compare(password, user.password);
+
+		if (!isMatch) {
+			return { success: false, message: "Invalid email or password" };
+		}
+
+		const token = await signAuthToken({ userId: user.id });
+		await setAuthCookie(token);
+
+		return { success: true, message: "Login successful" };
+	} catch {
+		return { success: false, message: "Error during login" };
 	}
 }
