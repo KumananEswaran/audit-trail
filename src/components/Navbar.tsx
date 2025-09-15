@@ -15,18 +15,35 @@ const Navbar = async () => {
 			<div className="flex items-center space-x-4">
 				{user ? (
 					<>
-						{" "}
-						<Link
-							href="/tickets/new"
-							className="hover:underline text-gray-700 transition">
-							New Ticket
-						</Link>
-						<Link
-							href="/tickets"
-							className="hover:underline text-gray-700 transition">
-							My Tickets
-						</Link>
-						<LogoutButton />
+						{user.role === "ADMIN" ? (
+							<>
+								<Link
+									href="/admin/audit"
+									className="hover:underline text-gray-700 transition">
+									View Logs
+								</Link>
+								<Link
+									href="/tickets"
+									className="hover:underline text-gray-700 transition">
+									View Tickets
+								</Link>
+								<LogoutButton />
+							</>
+						) : (
+							<>
+								<Link
+									href="/tickets/new"
+									className="hover:underline text-gray-700 transition">
+									New Ticket
+								</Link>
+								<Link
+									href="/tickets"
+									className="hover:underline text-gray-700 transition">
+									My Tickets
+								</Link>
+								<LogoutButton />
+							</>
+						)}
 					</>
 				) : (
 					<>

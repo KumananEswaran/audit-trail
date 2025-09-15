@@ -83,8 +83,10 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 	]);
 
 	return (
-		<div className="p-6">
-			<h1 className="text-2xl font-bold mb-4 text-blue-600">Audit Logs</h1>
+		<div className="p-6 mx-44">
+			<h1 className="text-3xl font-bold mb-4 text-blue-600 text-center">
+				Audit Logs
+			</h1>
 			<p className="text-sm mb-4">
 				Showing {skip + 1} - {Math.min(skip + pageSize, total)} of {total}
 			</p>
@@ -92,7 +94,7 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 			{/* Table */}
 			<div className="overflow-x-auto rounded-lg shadow">
 				<table className="min-w-full text-sm border-collapse">
-					<thead className="bg-blue-600 text-white">
+					<thead className="bg-blue-600 text-white ">
 						<tr className="divide-x divide-white/40">
 							<th className="px-3 py-2 text-left">No</th>
 							<th className="px-3 py-2 text-left">Date</th>
