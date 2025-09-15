@@ -9,8 +9,8 @@ const TicketsPage = async () => {
 	if (!user) {
 		redirect("/login");
 	}
-	const tickets = await getTickets();
-	console.log(tickets);
+	const tickets = await getTickets(user);
+	// console.log(tickets);
 
 	return (
 		<div className="min-h-screen bg-blue-50 p-8">
@@ -22,7 +22,11 @@ const TicketsPage = async () => {
 			) : (
 				<div className="space-y-4 max-w-3xl mx-auto">
 					{tickets.map((ticket) => (
-						<TicketItem key={ticket.id} ticket={ticket} />
+						<TicketItem
+							key={ticket.id}
+							ticket={ticket}
+							isAdmin={user.role === "ADMIN"}
+						/>
 					))}
 				</div>
 			)}

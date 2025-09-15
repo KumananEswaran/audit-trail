@@ -55,16 +55,20 @@ export async function createTicket(
 	}
 }
 
-export async function getTickets() {
+export async function getTickets(
+	useParam?: { id: string; role?: string } | null
+) {
 	try {
-		const user = await getCurrentUser();
+		const user = useParam ?? (await getCurrentUser());
 
 		if (!user) {
 			return [];
 		}
 
+		// If Admin, return all tickets
+		const where = user.role === "ADMIN" ? {} : { userId: user.id };
 		const tickets = await prisma.ticket.findMany({
-			where: { userId: user.id },
+			where,
 			orderBy: { createdAt: "desc" },
 		});
 

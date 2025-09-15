@@ -4,9 +4,10 @@ import type { Ticket } from "@/generated/prisma";
 
 type TicketItemProps = {
 	ticket: Ticket;
+	isAdmin?: boolean;
 };
 
-const TicketItem = ({ ticket }: TicketItemProps) => {
+const TicketItem = ({ ticket, isAdmin = false }: TicketItemProps) => {
 	const isClosed = ticket.status === "Closed";
 
 	return (
@@ -16,7 +17,12 @@ const TicketItem = ({ ticket }: TicketItemProps) => {
 				isClosed ? "opacity-50" : ""
 			}`}>
 			{/* Left Side */}
-			<div>
+			<div className="flex">
+				{isAdmin && (
+					<h2 className="text-xl font-semibold text-blue-600 mr-3">
+						#{ticket.id}
+					</h2>
+				)}
 				<h2 className="text-xl font-semibold text-blue-600">
 					{ticket.subject}
 				</h2>
@@ -33,7 +39,9 @@ const TicketItem = ({ ticket }: TicketItemProps) => {
 					href={`/tickets/${ticket.id}`}
 					className={`inline-block mt-2  text-sm px-3 py-1 rounded  transition text-center ${
 						isClosed
-							? "bg-gray-400 text-gray-700 cursor-not-allowed pointer-events-none"
+							? isAdmin
+								? "bg-blue-600 text-white hover:bg-blue-700"
+								: "bg-gray-400 text-gray-700 cursor-not-allowed pointer-events-none"
 							: "bg-blue-600 text-white hover:bg-blue-700"
 					}`}>
 					View Ticket
