@@ -3,7 +3,8 @@
 import { prisma } from "@/db/prisma";
 import bcrypt from "bcryptjs";
 import { signAuthToken, setAuthCookie, removeAuthCookie } from "@/lib/auth";
-import { FaK } from "react-icons/fa6";
+import { logAudit } from "@/lib/audit";
+import { getCurrentUser } from "@/lib/current-user";
 
 type ResponseResult = {
 	success: boolean;
@@ -49,6 +50,15 @@ export async function registerUser(
 		const token = await signAuthToken({ userId: user.id });
 		await setAuthCookie(token);
 
+		// Audit log
+		await logAudit({
+			userId: user.id,
+			action: "auth.register",
+			resourceType: "User",
+			resourceId: user.id,
+			after: user,
+		});
+
 		return { success: true, message: "Registration" };
 	} catch {
 		return {
@@ -59,12 +69,31 @@ export async function registerUser(
 }
 
 // Log user out and remove auth cookie
-export async function logoutUser(): Promise<{
-	success: boolean;
-	message: string;
-}> {
+// export async function logoutUser(): Promise<{
+// 	success: boolean;
+// 	message: string;
+// }> {
+// 	try {
+// 		await removeAuthCookie();
+
+// 		return { success: true, message: "Logout Successful" };
+// 	} catch {
+// 		return { success: false, message: "Logout failed. Please try again" };
+// 	}
+// }
+
+export async function logoutUser(): Promise<ResponseResult> {
 	try {
+		const user = await getCurrentUser();
+
 		await removeAuthCookie();
+
+		await logAudit({
+			userId: user?.id ?? null,
+			action: "auth.logout",
+			resourceType: "User",
+			resourceId: user?.id ? String(user.id) : null,
+		});
 
 		return { success: true, message: "Logout Successful" };
 	} catch {
@@ -101,6 +130,13 @@ export async function loginUser(
 
 		const token = await signAuthToken({ userId: user.id });
 		await setAuthCookie(token);
+
+		await logAudit({
+			userId: user.id,
+			action: "auth.login",
+			resourceType: "User",
+			resourceId: user.id,
+		});
 
 		return { success: true, message: "Login successful" };
 	} catch {

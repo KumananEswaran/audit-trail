@@ -2,6 +2,7 @@
 import { prisma } from "@/db/prisma";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/current-user";
+import { logAudit } from "@/lib/audit";
 
 export async function createTicket(
 	prevState: { success: boolean; message: string },
@@ -33,6 +34,14 @@ export async function createTicket(
 				priority,
 				user: { connect: { id: user.id } },
 			},
+		});
+
+		await logAudit({
+			userId: user.id,
+			action: "ticket.create",
+			resourceType: "Ticket",
+			resourceId: ticket.id,
+			after: ticket,
 		});
 
 		revalidatePath("/tickets");
@@ -93,22 +102,49 @@ export async function closeTicket(
 		return { success: false, message: "Unauthorized" };
 	}
 
-	const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+	// const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
 
-	if (!ticket || ticket.userId !== user.id) {
-		return {
-			success: false,
-			message: "You are not authorized to close this ticket",
-		};
-	}
+	// if (!ticket || ticket.userId !== user.id) {
+	// 	return {
+	// 		success: false,
+	// 		message: "You are not authorized to close this ticket",
+	// 	};
+	// }
 
-	await prisma.ticket.update({
-		where: { id: ticketId },
-		data: { status: "Closed" },
+	// await prisma.ticket.update({
+	// 	where: { id: ticketId },
+	// 	data: { status: "Closed" },
+	// });
+
+	return await prisma.$transaction(async (tx) => {
+		const before = await tx.ticket.findUnique({ where: { id: ticketId } });
+
+		if (!before || before.userId !== user.id) {
+			return {
+				success: false,
+				message: "You are not authorized to close this ticket",
+			};
+		}
+
+		const updated = await tx.ticket.update({
+			where: { id: ticketId },
+			data: { status: "Closed" },
+		});
+
+		await tx.auditLog.create({
+			data: {
+				userId: user.id,
+				action: "ticket.close",
+				resourceType: "Ticket",
+				resourceId: String(ticketId),
+				before,
+				after: updated,
+			},
+		});
+
+		revalidatePath("/tickets");
+		revalidatePath(`/tickets/${ticketId}`);
+
+		return { success: true, message: "Ticket has closed successfully " };
 	});
-
-	revalidatePath("/tickets");
-	revalidatePath(`/tickets/${ticketId}`);
-
-	return { success: true, message: "Ticket has closed successfully " };
 }
