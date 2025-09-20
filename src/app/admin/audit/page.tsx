@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/db/prisma";
 import { Prisma } from "@/generated/prisma";
+import { redirect } from "next/navigation";
 
 type AuditPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -36,7 +37,10 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 
 	const user = await getCurrentUser();
 
-	if (!user || user.role !== "ADMIN") {
+	if (!user) {
+		redirect("/login");
+	}
+	if (user.role !== "ADMIN") {
 		notFound();
 	}
 
