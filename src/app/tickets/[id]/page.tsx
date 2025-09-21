@@ -5,6 +5,7 @@ import { getPriorityClass } from "@/utils/ui";
 import CloseTicketButton from "@/components/CloseTicketButton";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
+import TicketActions from "../TicketActions";
 
 const TicketDetailsPage = async (props: {
 	params: Promise<{ id: string }>;
@@ -13,6 +14,10 @@ const TicketDetailsPage = async (props: {
 	const ticket = await getTicketById(id);
 
 	const user = await getCurrentUser();
+
+	const isOwner = user?.id === ticket?.userId;
+	const isAdmin = user?.role === "ADMIN";
+	const canModify = Boolean(isOwner || isAdmin);
 
 	if (!user) redirect("/login");
 
@@ -40,11 +45,16 @@ const TicketDetailsPage = async (props: {
 					<p>{new Date(ticket.createdAt).toLocaleString()}</p>
 				</div>
 
-				<Link
-					href="/tickets"
-					className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-					← Back to Tickets
-				</Link>
+				<div className="flex justify-between">
+					<Link
+						href="/tickets"
+						className=" bg-blue-600 text-white px-4 pt-3 rounded hover:bg-blue-700 transition">
+						← Back to Tickets
+					</Link>
+					<div className="flex items-center justify-end gap-3 mb-2">
+						{canModify && <TicketActions ticket={ticket} />}
+					</div>
+				</div>
 
 				{ticket.status !== "Closed" && (
 					<CloseTicketButton
