@@ -5,7 +5,7 @@ import { Prisma } from "@/generated/prisma";
 import { redirect } from "next/navigation";
 
 type AuditPageProps = {
-	searchParams?: Promise<Record<string, string | string[] | undefined>>;
+	searchParams?: Record<string, string | string[] | undefined>;
 };
 
 // Convert raw action to a readable message
@@ -25,6 +25,10 @@ function formatAction(log: {
 			return `Created ticket ${log.resourceId ? `#${log.resourceId}` : ""}`;
 		case "ticket.close":
 			return `Closed ticket ${log.resourceId ? `#${log.resourceId}` : ""}`;
+		case "ticket.update":
+			return `Edited ticket ${log.resourceId ? `#${log.resourceId}` : ""}`;
+		case "ticket.delete":
+			return `Deleted ticket ${log.resourceId ? `#${log.resourceId}` : ""}`;
 		default:
 			return `${log.action} — ${log.resourceType}${
 				log.resourceId ? ` #${log.resourceId}` : ""
@@ -33,7 +37,8 @@ function formatAction(log: {
 }
 
 const AuditPage = async ({ searchParams }: AuditPageProps) => {
-	const params = await searchParams;
+	const params: Record<string, string | string[] | undefined> =
+		searchParams ?? {};
 
 	const user = await getCurrentUser();
 
@@ -60,8 +65,18 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 	if (params?.resourceId) where.resourceId = String(params.resourceId);
 	if (params?.start || params?.end) {
 		where.createdAt = {};
-		if (params.start) where.createdAt.gte = new Date(String(params.start));
-		if (params.end) where.createdAt.lte = new Date(String(params.end));
+		if (params.start) {
+			const s = new Date(String(params.start));
+			if (!Number.isNaN(s.getTime())) where.createdAt.gte = s;
+		}
+
+		if (params.end) {
+			const e = new Date(String(params.end));
+			if (!Number.isNaN(e.getTime())) {
+				e.setHours(23, 59, 59, 999);
+				where.createdAt.lte = e;
+			}
+		}
 	}
 
 	const [logs, total] = await Promise.all([
@@ -86,16 +101,80 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 		prisma.auditLog.count({ where }),
 	]);
 
+	// Filter options
+	const users = await prisma.user.findMany({
+		select: { id: true, name: true },
+		orderBy: { name: "asc" },
+	});
+
+	function paramToDateInput(val?: string | string[] | undefined) {
+		if (!val) return "";
+		const s = Array.isArray(val) ? val[0] : val;
+		const d = new Date(s);
+		if (Number.isNaN(d.getTime())) return "";
+		return d.toISOString().slice(0, 10);
+	}
+
 	return (
 		<div className="p-6 mx-44">
 			<h1 className="text-3xl font-bold mb-4 text-blue-600 text-center">
 				Audit Logs
 			</h1>
-			<p className="text-sm mb-4">
-				Showing {skip + 1} - {Math.min(skip + pageSize, total)} of {total}
-			</p>
 
-			{/* Table */}
+			<form
+				method="get"
+				className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+				<div>
+					<label className="block text-xs text-gray-600 mb-1">User</label>
+					<select
+						name="userId"
+						defaultValue={params?.userId ? String(params.userId) : ""}
+						className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+						<option value="">All users</option>
+						{users.map((u) => (
+							<option key={u.id} value={u.id}>
+								{u.name ?? u.id}
+							</option>
+						))}
+					</select>
+				</div>
+
+				<div>
+					<label className="block text-xs text-gray-600 mb-1">Start</label>
+					<input
+						type="date"
+						name="start"
+						defaultValue={paramToDateInput(params.start)}
+						className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+					/>
+				</div>
+
+				<div>
+					<label className="block text-xs text-gray-600 mb-1">End</label>
+					<input
+						type="date"
+						name="end"
+						defaultValue={paramToDateInput(params.end)}
+						className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+					/>
+				</div>
+
+				<div className="flex gap-2 justify-start lg:justify-end">
+					<button
+						type="submit"
+						className="px-4 py-2 bg-blue-600 text-white rounded text-sm shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+						Apply
+					</button>
+
+					<a
+						role="button"
+						href="/admin/audit"
+						className="px-4 py-2 border rounded text-sm inline-flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-200">
+						Clear
+					</a>
+				</div>
+			</form>
+
 			<div className="overflow-x-auto rounded-lg shadow">
 				<table className="min-w-full text-sm border-collapse">
 					<thead className="bg-blue-600 text-white ">
@@ -130,7 +209,10 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 				</table>
 			</div>
 
-			{/* Pagination */}
+			<p className="text-sm my-4">
+				Showing {skip + 1} - {Math.min(skip + pageSize, total)} of {total}
+			</p>
+
 			<div className="mt-4 flex gap-2">
 				{page > 1 && (
 					<a href={`?page=${page - 1}`} className="px-3 py-1 border rounded">
