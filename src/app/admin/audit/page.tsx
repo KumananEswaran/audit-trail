@@ -101,6 +101,46 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 		prisma.auditLog.count({ where }),
 	]);
 
+	// pagination helpers (insert after the Promise.all that sets `logs` and `total`)
+	const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+	function buildQuery(overrides: Record<string, string | number | undefined>) {
+		const q = new URLSearchParams();
+		// preserve existing params
+		for (const key in params) {
+			const val = params[key];
+			if (val === undefined) continue;
+			if (Array.isArray(val)) {
+				val.forEach((v) => q.append(key, v));
+			} else {
+				q.append(key, String(val));
+			}
+		}
+		// apply overrides (e.g., page)
+		for (const k in overrides) {
+			const v = overrides[k];
+			if (v === undefined || v === null) q.delete(k);
+			else q.set(k, String(v));
+		}
+		const s = q.toString();
+		return s ? `?${s}` : "";
+	}
+
+	// build a compact pages array with ellipses for large page counts
+	const pageWindow = 2; // show current +/- 2 pages
+	const startPage = Math.max(1, page - pageWindow);
+	const endPage = Math.min(totalPages, page + pageWindow);
+	const pages: Array<number | "ellipsis"> = [];
+	if (startPage > 1) {
+		pages.push(1);
+		if (startPage > 2) pages.push("ellipsis");
+	}
+	for (let p = startPage; p <= endPage; p++) pages.push(p);
+	if (endPage < totalPages) {
+		if (endPage < totalPages - 1) pages.push("ellipsis");
+		pages.push(totalPages);
+	}
+
 	// Filter options
 	const users = await prisma.user.findMany({
 		select: { id: true, name: true },
@@ -209,22 +249,46 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 				</table>
 			</div>
 
-			<p className="text-sm my-4">
+			<p className="text-sm my-4 text-center">
 				Showing {skip + 1} - {Math.min(skip + pageSize, total)} of {total}
 			</p>
 
-			<div className="mt-4 flex gap-2">
-				{page > 1 && (
-					<a href={`?page=${page - 1}`} className="px-3 py-1 border rounded">
-						Previous
-					</a>
+			<nav
+				aria-label="Pagination"
+				className="mt-4 flex justify-center items-center gap-2 flex-wrap">
+				<a
+					href={buildQuery({ page: Math.max(1, page - 1) })}
+					className={`px-3 py-1 border rounded ${
+						page <= 1 ? "opacity-50 pointer-events-none" : ""
+					}`}>
+					Previous
+				</a>
+
+				{pages.map((p, idx) =>
+					p === "ellipsis" ? (
+						<span key={`e-${idx}`} className="px-2 text-sm text-gray-500">
+							…
+						</span>
+					) : (
+						<a
+							key={p}
+							href={buildQuery({ page: p })}
+							className={`px-3 py-1 border rounded text-sm ${
+								p === page ? "bg-blue-600 text-white" : ""
+							}`}>
+							{p}
+						</a>
+					)
 				)}
-				{skip + pageSize < total && (
-					<a href={`?page=${page + 1}`} className="px-3 py-1 border rounded">
-						Next
-					</a>
-				)}
-			</div>
+
+				<a
+					href={buildQuery({ page: Math.min(totalPages, page + 1) })}
+					className={`px-3 py-1 border rounded ${
+						page >= totalPages ? "opacity-50 pointer-events-none" : ""
+					}`}>
+					Next
+				</a>
+			</nav>
 		</div>
 	);
 };
