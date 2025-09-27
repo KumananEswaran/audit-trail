@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createTicket } from "@/actions/tickets.actions";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ const NewTicketForm = () => {
 		message: "",
 	});
 
+	const [submitting, setSubmitting] = useState(false);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -18,7 +19,10 @@ const NewTicketForm = () => {
 			toast.success("Ticket submitted successfully!");
 			router.push("/tickets");
 		}
-	}, [state.success, router]);
+		if (state.message) {
+			setSubmitting(false);
+		}
+	}, [state.success, state.message, router]);
 
 	return (
 		<div className="w-full max-w-md bg-white shadow-md rounded-lg p-8 border border-gray-200">
@@ -28,7 +32,9 @@ const NewTicketForm = () => {
 			{state.message && !state.success && (
 				<p className="text-red-500 mb-4 text-center">{state.message}</p>
 			)}
-			<form action={formAction} className="space-y-4 text-gray-700">
+			<form
+				action={formAction}
+				className="space-y-4 text-gray-700 onSubmit={() => setSubmitting(true)}">
 				<input
 					type="text"
 					className="w-full border border-gray-200 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -51,8 +57,9 @@ const NewTicketForm = () => {
 				</select>
 				<button
 					className="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
-					type="submit">
-					Submit
+					type="submit"
+					disabled={submitting}>
+					{submitting ? "Submitting…" : "Submit"}
 				</button>
 			</form>
 		</div>

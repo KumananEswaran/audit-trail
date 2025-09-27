@@ -200,7 +200,7 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 				<div className="flex gap-2 justify-start lg:justify-end">
 					<button
 						type="submit"
-						className="flex-1 lg:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg text-sm shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+						className="flex-1 lg:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg text-sm shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 cursor-pointer">
 						Apply
 					</button>
 
