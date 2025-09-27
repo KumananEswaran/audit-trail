@@ -5,7 +5,7 @@ import { Prisma } from "@/generated/prisma";
 import { redirect } from "next/navigation";
 
 type AuditPageProps = {
-	searchParams?: Record<string, string | string[] | undefined>;
+	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 // Convert raw action to a readable message
@@ -38,7 +38,7 @@ function formatAction(log: {
 
 const AuditPage = async ({ searchParams }: AuditPageProps) => {
 	const params: Record<string, string | string[] | undefined> =
-		searchParams ?? {};
+		(await searchParams) ?? {};
 
 	const user = await getCurrentUser();
 
