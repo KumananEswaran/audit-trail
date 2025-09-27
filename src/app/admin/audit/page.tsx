@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/db/prisma";
 import { Prisma } from "@/generated/prisma";
 import { redirect } from "next/navigation";
+import FormattedDate from "@/components/FormattedDate";
 
 type AuditPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -226,9 +227,6 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 					</thead>
 					<tbody className="divide-y divide-gray-200">
 						{logs.map((l, i) => {
-							const createdAt = new Date(l.createdAt);
-							const date = createdAt.toLocaleDateString();
-							const time = createdAt.toLocaleTimeString();
 							const username = l.user?.name ?? "Anonymous";
 
 							return (
@@ -236,8 +234,12 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 									key={l.id}
 									className="hover:bg-gray-50 divide-x divide-gray-200">
 									<td className="px-3 py-2">{skip + i + 1}</td>
-									<td className="px-3 py-2">{date}</td>
-									<td className="px-3 py-2">{time}</td>
+									<td className="px-3 py-2">
+										<FormattedDate iso={new Date(l.createdAt).toISOString()} />
+									</td>
+									<td className="px-3 py-2">
+										{new Date(l.createdAt).toLocaleTimeString()}
+									</td>
 									<td className="px-3 py-2">{username}</td>
 									<td className="px-3 py-2">{formatAction(l)}</td>
 								</tr>
