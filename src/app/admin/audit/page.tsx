@@ -101,12 +101,10 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 		prisma.auditLog.count({ where }),
 	]);
 
-	// pagination helpers (insert after the Promise.all that sets `logs` and `total`)
 	const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
 	function buildQuery(overrides: Record<string, string | number | undefined>) {
 		const q = new URLSearchParams();
-		// preserve existing params
 		for (const key in params) {
 			const val = params[key];
 			if (val === undefined) continue;
@@ -116,7 +114,6 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 				q.append(key, String(val));
 			}
 		}
-		// apply overrides (e.g., page)
 		for (const k in overrides) {
 			const v = overrides[k];
 			if (v === undefined || v === null) q.delete(k);
@@ -126,8 +123,7 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 		return s ? `?${s}` : "";
 	}
 
-	// build a compact pages array with ellipses for large page counts
-	const pageWindow = 2; // show current +/- 2 pages
+	const pageWindow = 2;
 	const startPage = Math.max(1, page - pageWindow);
 	const endPage = Math.min(totalPages, page + pageWindow);
 	const pages: Array<number | "ellipsis"> = [];
@@ -156,20 +152,21 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 	}
 
 	return (
-		<div className="p-6 mx-44">
-			<h1 className="text-3xl font-bold mb-4 text-blue-600 text-center">
+		<div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
+			<h1 className="text-2xl sm:text-3xl font-bold mb-6 text-blue-600 text-center">
 				Audit Logs
 			</h1>
 
+			{/* Filters */}
 			<form
 				method="get"
-				className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+				className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
 				<div>
 					<label className="block text-xs text-gray-600 mb-1">User</label>
 					<select
 						name="userId"
 						defaultValue={params?.userId ? String(params.userId) : ""}
-						className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+						className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
 						<option value="">All users</option>
 						{users.map((u) => (
 							<option key={u.id} value={u.id}>
@@ -185,7 +182,7 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 						type="date"
 						name="start"
 						defaultValue={paramToDateInput(params.start)}
-						className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+						className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
 					/>
 				</div>
 
@@ -195,29 +192,30 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 						type="date"
 						name="end"
 						defaultValue={paramToDateInput(params.end)}
-						className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+						className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
 					/>
 				</div>
 
 				<div className="flex gap-2 justify-start lg:justify-end">
 					<button
 						type="submit"
-						className="px-4 py-2 bg-blue-600 text-white rounded text-sm shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+						className="flex-1 lg:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg text-sm shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
 						Apply
 					</button>
 
 					<a
 						role="button"
 						href="/admin/audit"
-						className="px-4 py-2 border rounded text-sm inline-flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-200">
+						className="flex-1 lg:flex-none px-4 py-2 border rounded-lg text-sm inline-flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-200">
 						Clear
 					</a>
 				</div>
 			</form>
 
+			{/* Table */}
 			<div className="overflow-x-auto rounded-lg shadow">
 				<table className="min-w-full text-sm border-collapse">
-					<thead className="bg-blue-600 text-white ">
+					<thead className="bg-blue-600 text-white">
 						<tr className="divide-x divide-white/40">
 							<th className="px-3 py-2 text-left">No</th>
 							<th className="px-3 py-2 text-left">Date</th>
@@ -249,16 +247,18 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 				</table>
 			</div>
 
+			{/* Summary */}
 			<p className="text-sm my-4 text-center">
 				Showing {skip + 1} - {Math.min(skip + pageSize, total)} of {total}
 			</p>
 
+			{/* Pagination */}
 			<nav
 				aria-label="Pagination"
 				className="mt-4 flex justify-center items-center gap-2 flex-wrap">
 				<a
 					href={buildQuery({ page: Math.max(1, page - 1) })}
-					className={`px-3 py-1 border rounded ${
+					className={`px-3 py-1 border rounded text-sm ${
 						page <= 1 ? "opacity-50 pointer-events-none" : ""
 					}`}>
 					Previous
@@ -266,7 +266,9 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 
 				{pages.map((p, idx) =>
 					p === "ellipsis" ? (
-						<span key={`e-${idx}`} className="px-2 text-sm text-gray-500">
+						<span
+							key={`e-${idx}`}
+							className="px-2 text-sm text-gray-500 select-none">
 							…
 						</span>
 					) : (
@@ -283,7 +285,7 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 
 				<a
 					href={buildQuery({ page: Math.min(totalPages, page + 1) })}
-					className={`px-3 py-1 border rounded ${
+					className={`px-3 py-1 border rounded text-sm ${
 						page >= totalPages ? "opacity-50 pointer-events-none" : ""
 					}`}>
 					Next
