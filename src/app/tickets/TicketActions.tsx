@@ -56,6 +56,7 @@ function EditFormInner({
 	const router = useRouter();
 	const initialState = { success: false, message: "" };
 	const [state, formAction] = useActionState(updateTicket, initialState);
+	const [submitting, setSubmitting] = useState(false);
 
 	useEffect(() => {
 		if (state.success) {
@@ -65,10 +66,14 @@ function EditFormInner({
 		} else if (state.message && !state.success) {
 			toast.error(state.message);
 		}
+		if (state.message) setSubmitting(false);
 	}, [state, onClose, router]);
 
 	return (
-		<form action={formAction} className="space-y-4">
+		<form
+			action={formAction}
+			className="space-y-4"
+			onSubmit={() => setSubmitting(true)}>
 			<input type="hidden" name="ticketId" value={String(ticket.id)} />
 			<input
 				type="text"
@@ -94,8 +99,9 @@ function EditFormInner({
 
 			<button
 				type="submit"
-				className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer">
-				Save Changes
+				className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
+				disabled={submitting}>
+				{submitting ? "Saving…" : "Save Changes"}
 			</button>
 		</form>
 	);
@@ -146,13 +152,13 @@ function DeleteFormInner({
 			<button
 				type="button"
 				onClick={onClose}
-				className="flex-1 bg-gray-200 py-2 rounded hover:bg-gray-300 cursor-pointer"
+				className="flex-1 bg-gray-200 py-2 rounded hover:bg-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
 				disabled={loading}>
 				Cancel
 			</button>
 			<button
 				type="submit"
-				className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 cursor-pointer"
+				className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
 				disabled={loading}>
 				{loading ? "Deleting…" : "Delete"}
 			</button>

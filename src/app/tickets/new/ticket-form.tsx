@@ -34,7 +34,8 @@ const NewTicketForm = () => {
 			)}
 			<form
 				action={formAction}
-				className="space-y-4 text-gray-700 onSubmit={() => setSubmitting(true)}">
+				className="space-y-4 text-gray-700 "
+				onSubmit={() => setSubmitting(true)}>
 				<input
 					type="text"
 					className="w-full border border-gray-200 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"

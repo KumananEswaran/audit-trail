@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/actions/auth.actions";
@@ -14,6 +14,7 @@ const LoginForm = () => {
 	};
 
 	const [state, formAction] = useActionState(loginUser, initialState);
+	const [submitting, setSubmitting] = useState(false);
 
 	useEffect(() => {
 		if (state.success) {
@@ -23,6 +24,7 @@ const LoginForm = () => {
 		} else if (state.message) {
 			toast.error(state.message);
 		}
+		if (state.message) setSubmitting(false);
 	}, [state, router]);
 
 	return (
@@ -32,7 +34,10 @@ const LoginForm = () => {
 					Login
 				</h1>
 
-				<form action={formAction} className="space-y-4 text-gray-700">
+				<form
+					action={formAction}
+					className="space-y-4 text-gray-700"
+					onSubmit={() => setSubmitting(true)}>
 					<input
 						className="w-full border border-gray-200 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
 						type="email"
@@ -51,8 +56,9 @@ const LoginForm = () => {
 					/>
 					<button
 						className="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
-						type="submit">
-						Login
+						type="submit"
+						disabled={submitting}>
+						{submitting ? "Logging in…" : "Login"}
 					</button>
 				</form>
 			</div>
