@@ -1,12 +1,24 @@
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/db/prisma";
-import { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@/generated/prisma";
 import { redirect } from "next/navigation";
 import FormattedDate from "@/components/FormattedDate";
+import { formatAuditChanges } from "@/lib/auditDiff";
 
 type AuditPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+type AuditRow = {
+	id: number;
+	action: string;
+	resourceType: string;
+	resourceId: string | null;
+	before: Prisma.JsonValue | null;
+	after: Prisma.JsonValue | null;
+	createdAt: Date;
+	user: { name?: string | null } | null;
 };
 
 // Convert raw action to a readable message
@@ -80,7 +92,7 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 		}
 	}
 
-	const [logs, total] = await Promise.all([
+	const [logsRaw, total] = await Promise.all([
 		prisma.auditLog.findMany({
 			where,
 			orderBy: { createdAt: "desc" },
@@ -91,16 +103,16 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 				action: true,
 				resourceType: true,
 				resourceId: true,
+				before: true,
+				after: true,
 				createdAt: true,
-				user: {
-					select: {
-						name: true,
-					},
-				},
+				user: { select: { name: true } },
 			},
 		}),
 		prisma.auditLog.count({ where }),
 	]);
+
+	const logs = logsRaw as AuditRow[];
 
 	const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -223,6 +235,7 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 							<th className="px-3 py-2 text-left">Time</th>
 							<th className="px-3 py-2 text-left">User</th>
 							<th className="px-3 py-2 text-left">Action</th>
+							<th className="px-3 py-2 text-left">Edit Details</th>
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-gray-200">
@@ -242,6 +255,33 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 									</td>
 									<td className="px-3 py-2">{username}</td>
 									<td className="px-3 py-2">{formatAction(l)}</td>
+									<td className="px-3 py-2 max-w-xs">
+										{l.action && l.action.includes("update") ? (
+											(() => {
+												const changes = formatAuditChanges(l.before, l.after, {
+													maxFields: 3,
+													maxValueLength: 150,
+												});
+												if (changes.length === 0)
+													return (
+														<span className="text-gray-500">
+															No visible changes
+														</span>
+													);
+												return (
+													<div className="flex flex-col gap-1 text-sm text-gray-700">
+														{changes.map((c, idx) => (
+															<div key={idx} className="truncate">
+																{c}
+															</div>
+														))}
+													</div>
+												);
+											})()
+										) : (
+											<span className="text-gray-400">N/A</span>
+										)}
+									</td>
 								</tr>
 							);
 						})}
