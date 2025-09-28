@@ -235,7 +235,7 @@ const AuditPage = async ({ searchParams }: AuditPageProps) => {
 							<th className="px-3 py-2 text-left">Time</th>
 							<th className="px-3 py-2 text-left">User</th>
 							<th className="px-3 py-2 text-left">Action</th>
-							<th className="px-3 py-2 text-left">Edit Details</th>
+							<th className="px-3 py-2 text-left">Change Summary</th>
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-gray-200">
